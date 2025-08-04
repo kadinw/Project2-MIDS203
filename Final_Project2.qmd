@@ -39,7 +39,7 @@ citeproc: false
 biblio-title: References
 link-citations: true
 abstract: | 
-  In this report, we aim to derive potential connections between sleep behaviors, and occupation. We will be working with a dataset containing a mixture of occupations, and utilizing sleep quality, sleep duration, and stress levels, to measure correlations.
+  In this report, we aim to derive potential connections between reported sleep quality, and occupation. We will be working with a dataset containing a mixture of occupations, and utilizing sleep quality, sleep duration, and stress levels, to measure possible correlations.
 ---
 
 ```{r}
@@ -57,7 +57,7 @@ library(dplyr)
 
 ```{r set plotting theme}
 theme_set(theme_minimal())
-sleep_data <- read.csv("C:\\Users\\winni\\Documents\\MIDS\\mids203HW\\Project2\\Sleep_health_and_lifestyle_dataset.csv")
+sleep_data <- read.csv("C:\\Users\\winni\\Documents\\MIDS\\mids203HW\\Project2-MIDS203\\Sleep_health_and_lifestyle_dataset.csv")
 ```
 
 ```{r}
@@ -71,7 +71,7 @@ get_robust_se <- function(vcov) {
 
   We plan to study an answer to the question: "Is there a relationship between sleep quality and different occupations?”. This question is interesting to us, as we believe it is a common belief that some occupations demand more hours, or are more stressful than others may be. We wonder if this thought is based in fact, or if people, when studied, claim and behave differently in their twilight hours. There are also related questions we could seek to answer, such as “Does occupation have a notable relation to stress level?” and “Does Occupation have correlation to physical activity level?”. The question of whether occupation affects sleep has been studied before, with a mixture of results depending on the study, and individuals polled. Some look at the prevalence of short sleep in certain career fields (Oxford Academic). While others look at associations between working hours and sleep (Taylor & Francis). And some study occupational stress and sleep (NIH). We seek to evaluate a person's claim of sleep quality first and foremost alongside their sleep duration to get a strong measurement of their occupations' possible connection.
 
-To answer this question, we have a data set containing occupations, sleep durations, quality, stress level, physical activity level, and even steps. We can derive information from this, by comparing each occupation and finding unique takeaways from this data set involving sleep duration/quality and career field specifically. We can use linear regression models to find correlations between sleep quality/duration and occupation in our studies, looking in particular for p-values of notable significance. Scatter plots could be useful as well to show trends and potential clustering towards, or away from high sleep quality/duration when considering different occupations. We are excited to immerse ourselves further into this data, and derive potentially notable insights.
+  To answer this question, we have a data set containing occupations, sleep durations, quality, stress level, physical activity level, and even steps. We can derive information from this, by comparing each occupation and finding unique takeaways from this data set involving sleep duration/quality and career field specifically. We can use linear regression models to find correlations between sleep quality/duration and occupation in our studies, looking in particular for p-values of notable significance. Scatter plots could be useful as well to show trends and potential clustering towards, or away from high sleep quality/duration when considering different occupations. We are excited to immerse ourselves further into this data, and derive potentially notable insights.
 
 
 ## Data and Methodology
@@ -121,9 +121,9 @@ model_exploration_sleep_qual <- multinom(Quality.of.Sleep ~ Sleep.Duration + Occ
 }))
 ```
 
-Exploration Occupation:
+**Exploration Quality of Sleep:**
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-summary(model_exploration)
+#summary(model_exploration)
 
 summary(model_exploration_sleep_qual)
 
@@ -131,7 +131,7 @@ summary(model_exploration_sleep_qual)
 
 
 ```
-  When running a prediction on this fitted model, we can see that this model correctly predicts Occupation our key **X** variable at a rate above average in some occupations, but shows extreme accuracy in others such as "Teacher", "Doctor", and "Salesperson". We used a similar format below to predict quality of sleep, our **Y**-variable. 
+6
 
 
 Next: 
@@ -195,8 +195,8 @@ ggplot(long_probs, aes(x = Quality.of.Sleep, y = Probability, color = Occupation
 
 
 ## Results
-In this 
-Confirmation set 
+  In this confirmation set, we will first test how well our exploration set can be used to predict our confirmation set.
+  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 confirmation_set$Predicted <- predict(model_exploration, newdata = confirmation_set)
 
@@ -204,9 +204,10 @@ confirmation_set$Predicted <- predict(model_exploration, newdata = confirmation_
 table(Predicted = confirmation_set$Predicted, Actual = confirmation_set$Occupation)
 
 ```
+  When running a prediction on this fitted model, we can see that this model correctly predicts Occupation our key **X** variable (Occupation) at a rate above average in some occupations, but shows extreme accuracy in others such as "Teacher", "Doctor", and "Salesperson". This tells us that this data set may hold some strong trends within professions, and gives us confidence that our data does not suffer from high variance. 
+  
+  We used a similar format below to predict quality of sleep, our **Y**-variable. 
 
-
-Confirmation set 2
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # 1. Create exploration set: 30% from each Quality.of.Sleep group
 exploration_set2 <- filtered_occ_data %>%
@@ -222,6 +223,9 @@ all_levels <- as.character(1:10)
 exploration_set2$Quality.of.Sleep <- factor(exploration_set2$Quality.of.Sleep, levels = all_levels)
 confirmation_set2$Quality.of.Sleep <- factor(confirmation_set2$Quality.of.Sleep, levels = all_levels)
 
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 invisible(capture.output({
 #Train
   model_exploration2 <- multinom(Quality.of.Sleep ~ Sleep.Duration + Occupation + Stress.Level + Physical.Activity.Level, 
@@ -245,37 +249,43 @@ colnames(conf_matrix2) <- paste0(colnames(conf_matrix2), "_QoS")
 conf_matrix2
 
 ```
-
+  We can see similarly here, that Quality of Sleep (QoS) also has strong predictability. This is a very good sign that our data is significant.
+  
+  Next, we
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
-#Occupation not numeric
-summary(model_exploration2)
-#avPlots(model_exploration2)
+invisible(capture.output({
+  #Occupation not numeric
+  summary(model_exploration2)
+  #avPlots(model_exploration2)
 
-## Correlation Matrix
-numeric_data <- exploration_set2 %>%
-    transmute(
-    Quality.of.Sleep = as.numeric(as.character(Quality.of.Sleep)),
-    Sleep.Duration   = as.numeric(Sleep.Duration),
-    Stress.Level     = as.numeric(Stress.Level),
-    Physical.Activity.Level = as.numeric(Physical.Activity.Level)
+  ## Correlation Matrix
+  numeric_data <- exploration_set2 %>%
+      transmute(
+      Quality.of.Sleep = as.numeric(as.character(Quality.of.Sleep)),
+      Sleep.Duration   = as.numeric(Sleep.Duration),
+      Stress.Level     = as.numeric(Stress.Level),
+      Physical.Activity.Level = as.numeric(Physical.Activity.Level)
   )
 
 #cor_matrix <- cor(numeric_data)
 #corrplot(cor_matrix, method = "circle", type = "upper", tl.cex = 0.8)
 
 
-dat <- subset(filtered_occ_data, complete.cases(Quality.of.Sleep, Occupation))
-dat$Occupation <- factor(dat$Occupation)
-dat$Quality.of.Sleep <- as.numeric(as.character(dat$Quality.of.Sleep))
+  dat <- subset(filtered_occ_data, complete.cases(Quality.of.Sleep, Occupation))
 
+  dat$Occupation <- factor(dat$Occupation)
+  dat$Quality.of.Sleep <- as.numeric(as.character(dat$Quality.of.Sleep))
+}))
 # Fit ANOVA
 fit <- aov(Quality.of.Sleep ~ Occupation, data = dat)
 
-summary(fit)        # F-test and p-value
-TukeyHSD(fit)       # Post-hoc pairwise comparisons between occupations
+# F-test and p-value
+summary(fit)        
+#pairwise comparisons between occupations
+TukeyHSD(fit)       
 
-# Effect size (eta-squared)
+# Effect size (eta squared)
 ss <- summary(fit)[[1]][, "Sum Sq"]
 eta2 <- ss["Occupation"] / sum(ss)
 eta2
