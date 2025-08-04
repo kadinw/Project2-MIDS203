@@ -134,12 +134,12 @@ summary(model_exploration_sleep_qual)
 6
 
 
-Next: 
+From this summary, our our exploratory sleep quality model, we see  
 ```{r}
 
 #summary(model_filtered)
 ```
-Filtered Data of Only Sleep Quality:
+
 ```{r, message=FALSE, warning = FALSE, echo = FALSE}
 #table(sleep_data$Occupation)
 #table(sleep_data$Quality.of.Sleep)
