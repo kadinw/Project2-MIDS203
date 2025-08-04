@@ -57,7 +57,7 @@ library(dplyr)
 
 ```{r set plotting theme}
 theme_set(theme_minimal())
-sleep_data <- read.csv("C:\\Users\\winni\\Documents\\MIDS\\mids203HW\\Project2-MIDS203\\Sleep_health_and_lifestyle_dataset.csv")
+sleep_data <- read.csv("Sleep_health_and_lifestyle_dataset.csv")
 ```
 
 ```{r}
@@ -108,24 +108,42 @@ exploration_set <- filtered_occ_data %>%
 # get the rest as the confirmation set
 confirmation_set <- anti_join(filtered_occ_data, exploration_set, by = colnames(filtered_occ_data))
 
-model_exploration <- multinom(Occupation ~ Sleep.Duration + Quality.of.Sleep + Stress.Level + Physical.Activity.Level, 
-                              data = exploration_set)
+# Ensure Occupation is a factor
+exploration_set$Occupation <- as.factor(exploration_set$Occupation)
 
-model_exploration_sleep_qual <- multinom(Quality.of.Sleep ~ Sleep.Duration + Occupation + Stress.Level + Physical.Activity.Level, 
-                              data = exploration_set)
+confirmation_set$Occupation <- as.factor(confirmation_set$Occupation)
 
+# Apply sum-to-zero contrast coding
+contrasts(exploration_set$Occupation) <- contr.sum(n = length(levels(exploration_set$Occupation)))
+
+contrasts(confirmation_set$Occupation) <- contr.sum(n = length(levels(confirmation_set$Occupation)))
+
+#model_exploration <- multinom(Occupation ~ Sleep.Duration + Quality.of.Sleep + #Stress.Level + Physical.Activity.Level, 
+                              #data = exploration_set)
+
+#model_exploration_sleep_qual <- multinom(Quality.of.Sleep ~ Sleep.Duration + #Occupation + Stress.Level + Physical.Activity.Level, 
+                              #data = exploration_set)
+
+#model_exploration_sleep_qual_alone <- multinom(Quality.of.Sleep ~ Occupation, 
+                              #data = exploration_set)
 #Occupation is not numeric
 #model_exploration_occ <- lm(Occupation ~ Quality.of.Sleep, 
                              # data = exploration_set)
+
+
+model_exploration_sleep_qual_alone <- lm(Quality.of.Sleep ~ Occupation, data = exploration_set)
 
 }))
 ```
 
 **Exploration Quality of Sleep:**
+
+  Here, we show a basline model giving a visual of our coefficients for quality of sleep based on occupation.
+  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #summary(model_exploration)
-
-summary(model_exploration_sleep_qual)
+levels(exploration_set$Occupation)
+summary(model_exploration_sleep_qual_alone)
 
 #avPlots(model_exploration)
 
@@ -149,6 +167,8 @@ From this summary, our our exploratory sleep quality model, we see
 #summary(model)
 ```
 You will notice some larger standard errors on our intercept here. This is caused by variance in the population sizes of some of our occupations (Nurses were quite popular in this data set at a count of 73). 
+
+Here we see a general representation of reported sleep quality, and associated occupation based on our filtered data.
 ```{r}
 
 ggplot(filtered_occ_data, aes(x = Predicted, y = Quality.of.Sleep)) +
