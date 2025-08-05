@@ -41,7 +41,6 @@ link-citations: true
 abstract: | 
   In this report, we aim to derive potential connections between reported sleep quality, and occupation. We will be working with a dataset containing a mixture of occupations, and utilizing sleep quality, sleep duration, and stress levels, to measure possible correlations.
 ---
-
 ```{r}
 library(corrplot)
 library(tidyverse)
@@ -51,37 +50,27 @@ library(sandwich)
 library(stargazer)
 
 library(ggplot2)
+library(broom)
 library(nnet)
 library(dplyr)
 ```
-
 ```{r set plotting theme}
 theme_set(theme_minimal())
 sleep_data <- read.csv("Sleep_health_and_lifestyle_dataset.csv")
 ```
-
 ```{r}
 get_robust_se <- function(vcov) {
   se_ <- sqrt(diag(vcov))
   return(se_)
 }
 ```
-
 ## Importance and Context
+We plan to study an answer to the question: "Is there a relationship between sleep quality and different occupations?”. This question is interesting to us, as we believe it is a common belief that some occupations demand more hours, or are more stressful than others may be. We wonder if this thought is based in fact, or if people, when studied, claim and behave differently in their twilight hours. There are also related questions we could seek to answer, such as “Does occupation have a notable relation to stress level?” and “Does Occupation have correlation to physical activity level?”. The question of whether occupation affects sleep has been studied before, with a mixture of results depending on the study, and individuals polled. Some look at the prevalence of short sleep in certain career fields (Oxford Academic). While others look at associations between working hours and sleep (Taylor & Francis). And some study occupational stress and sleep (NIH). We seek to evaluate a person's claim of sleep quality first and foremost alongside their sleep duration to get a strong measurement of their occupations' possible connection.
 
-  We plan to study an answer to the question: "Is there a relationship between sleep quality and different occupations?”. This question is interesting to us, as we believe it is a common belief that some occupations demand more hours, or are more stressful than others may be. We wonder if this thought is based in fact, or if people, when studied, claim and behave differently in their twilight hours. There are also related questions we could seek to answer, such as “Does occupation have a notable relation to stress level?” and “Does Occupation have correlation to physical activity level?”. The question of whether occupation affects sleep has been studied before, with a mixture of results depending on the study, and individuals polled. Some look at the prevalence of short sleep in certain career fields (Oxford Academic). While others look at associations between working hours and sleep (Taylor & Francis). And some study occupational stress and sleep (NIH). We seek to evaluate a person's claim of sleep quality first and foremost alongside their sleep duration to get a strong measurement of their occupations' possible connection.
-
-  To answer this question, we have a data set containing occupations, sleep durations, quality, stress level, physical activity level, and even steps. We can derive information from this, by comparing each occupation and finding unique takeaways from this data set involving sleep duration/quality and career field specifically. We can use linear regression models to find correlations between sleep quality/duration and occupation in our studies, looking in particular for p-values of notable significance. Scatter plots could be useful as well to show trends and potential clustering towards, or away from high sleep quality/duration when considering different occupations. We are excited to immerse ourselves further into this data, and derive potentially notable insights.
-
+  To answer this question, we have a data set containing occupations, sleep duration, quality, stress level, physical activity level, and even steps. We can derive information from this, by comparing each occupation and finding unique takeaways from this data set involving sleep duration/quality and career field specifically. We can use linear regression models to find correlations between sleep quality/duration and occupation in our studies, looking in particular for p-values of notable significance. Scatter plots could be useful as well to show trends and potential clustering towards, or away from high sleep quality/duration when considering different occupations. We are excited to immerse ourselves further into this data, and derive potentially notable insights.
 
 ## Data and Methodology
-
-  In our research, we utilized a data set containing sleep and health/lifestyle data with 374 individual unique Person IDs. We have narrowed this information down further to exclude occupations that we deem to contain too little information to include in our model (There were too few entrants to that occupation). We set the cutoff for this at 20, meaning, we removed occupations that made up around 5% or less of the population. This helped to ensure more accuracy in our models, and brought us down to 7 Occupations out of the original 10. This still left us with a total of 363 rows of data, which we deemed sufficient for this study.Each remaining row contains multiple observations, collected at once from each individual. We specifically would like to focus on the Y-variable of sleep quality, as we noticed unexpected responses when compared to sleep duration6 that created notable diversity between our occupations.Sleep quality is a 1-10 **Y** measurement that we will be treating as a continuous variable in this case. We will also be comparing captured sleep quality and comparing it to sleep duration, stress level, and even physical activity.
-  (add information on Outcome variable, observation types, )
-  
-  
-First we can run a prediction on Occupation to give a strong visual, and next, we will move to quality of sleep.
-
+ In our research, we utilized a data set containing sleep and health/lifestyle data with 374 individual unique Person IDs. We have narrowed this information down further to exclude occupations that we deem to contain too little information to include in our model (There were too few entrants to that occupation). We set the cutoff for this at 20, meaning, we removed occupations that made up around 5% or less of the population. This helped to ensure more accuracy in our models, and brought us down to 7 Occupations out of the original 10. This still left us with a total of 363 rows of data, which we deemed sufficient for this study.Each remaining row contains multiple observations, collected at once from each individual. We specifically would like to focus on the Y-variable of sleep quality, as we noticed unexpected responses when compared to sleep duration6 that created notable diversity between our occupations.Sleep quality is a 1-10 **Y** measurement that we will be treating as a continuous variable in this case. We will also be comparing captured sleep quality and comparing it to sleep duration, stress level, and even physical activity.
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #creation of exploration and confirmation set
 invisible(capture.output({
@@ -99,30 +88,44 @@ invisible(capture.output({
 
 set.seed(123)
 
-# Sample 30% from each occupation into the exploration set
+#Sample 30% from each occupation for exploration set
 exploration_set <- filtered_occ_data %>%
   group_by(Occupation) %>%
   slice_sample(prop = 0.3) %>%
   ungroup()
 
-# get the rest as the confirmation set
+#get the rest as the confirmation set
 confirmation_set <- anti_join(filtered_occ_data, exploration_set, by = colnames(filtered_occ_data))
 
-# Ensure Occupation is a factor
+#Occupation is now a factor in both datasets
 exploration_set$Occupation <- as.factor(exploration_set$Occupation)
-
 confirmation_set$Occupation <- as.factor(confirmation_set$Occupation)
 
-# Apply sum-to-zero contrast coding
-contrasts(exploration_set$Occupation) <- contr.sum(n = length(levels(exploration_set$Occupation)))
+#Extract occupation levels from exploration_set
+occupation_levels <- levels(exploration_set$Occupation)
+
+#Create named contrast matrix
+contrasts_matrix <- contr.sum(length(occupation_levels))
+
+#Add row and column names
+rownames(contrasts_matrix) <- occupation_levels
+colnames(contrasts_matrix) <- occupation_levels[-length(occupation_levels)]  # drop last level (R does this by default)
+
+#Apply named contrast matrix
+contrasts(exploration_set$Occupation) <- contrasts_matrix
 
 contrasts(confirmation_set$Occupation) <- contr.sum(n = length(levels(confirmation_set$Occupation)))
 
-#model_exploration <- multinom(Occupation ~ Sleep.Duration + Quality.of.Sleep + #Stress.Level + Physical.Activity.Level, 
-                              #data = exploration_set)
+#Fit model: Predicting Occupation
+model_exploration <- multinom(Occupation ~ Sleep.Duration + Quality.of.Sleep + Stress.Level + Physical.Activity.Level, 
+                              data = exploration_set)
 
-#model_exploration_sleep_qual <- multinom(Quality.of.Sleep ~ Sleep.Duration + #Occupation + Stress.Level + Physical.Activity.Level, 
-                              #data = exploration_set)
+# Fit model: Predicting Quality.of.Sleep ~ Occupation
+model_exploration_sleep_qual_alone <- lm(Quality.of.Sleep ~ Occupation, data = exploration_set)
+
+
+model_exploration_sleep_qual <- lm(Quality.of.Sleep ~ Sleep.Duration + Occupation + Stress.Level + Physical.Activity.Level, 
+                              data = exploration_set)
 
 #model_exploration_sleep_qual_alone <- multinom(Quality.of.Sleep ~ Occupation, 
                               #data = exploration_set)
@@ -131,31 +134,19 @@ contrasts(confirmation_set$Occupation) <- contr.sum(n = length(levels(confirmati
                              # data = exploration_set)
 
 
-model_exploration_sleep_qual_alone <- lm(Quality.of.Sleep ~ Occupation, data = exploration_set)
 
 }))
 ```
-
-**Exploration Quality of Sleep:**
-
-  Here, we show a basline model giving a visual of our coefficients for quality of sleep based on occupation.
-  
+  Here, we show a model giving a visual of our coefficients for quality of sleep based on occupation.
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-#summary(model_exploration)
-levels(exploration_set$Occupation)
 summary(model_exploration_sleep_qual_alone)
 
-#avPlots(model_exploration)
-
-
 ```
-6
-
-
-From this summary, our our exploratory sleep quality model, we see  
+  From this summary, our our exploratory sleep quality model, we made some important tweaks. As we do not have a baseline occupation, so instead, we took a grand mean to use as our baseline, incorporating all occupations. This number comes to an average of 7.324 quality of sleep. Based off of this data alone, we see a significant p-value for Accountant, Doctor, and Lawyer, very strong significance in both Engineer, and Salesperson, and a value without statistical significance in Nurses. With their coefficients in mind, we can see that some Occupations have a negative correlation, and some positive, with varying degrees. Our R squared gives us a 43% variance in sleep quality and an adjusted value of 39.5% explained by occupation by this slice of data and our number of predictors. With our F-statistic and p-value, we can convincingly imagine that in this data slice, Occupation is a significant predictor of quality of sleep.
 ```{r}
 
-#summary(model_filtered)
+summary(model_exploration_sleep_qual)
+
 ```
 
 ```{r, message=FALSE, warning = FALSE, echo = FALSE}
@@ -166,54 +157,86 @@ From this summary, our our exploratory sleep quality model, we see
 #summary(model_uno)
 #summary(model)
 ```
-You will notice some larger standard errors on our intercept here. This is caused by variance in the population sizes of some of our occupations (Nurses were quite popular in this data set at a count of 73). 
+  With the addition of Stress Level, Physical Activity Level, and sleep duration, our model now explains 94.09% of sleep quality variance. We chose to omit age and gender here, and even the existence of sleep disorders.As one may expect, this slice shows that sleep duration and stress level contribute heavily to sleep quality, and possibly surprising to some, physical activity does not appear significant here.
 
-Here we see a general representation of reported sleep quality, and associated occupation based on our filtered data.
+  Another is that there seems to be a shift in the effect if occupation on sleep quality, with Doctor no longer appearing significant, and appearing to be more due to stress and/or less sleep duration. These could obviously be affected by occupation, but we are specifically measuring the effect of sleep quality here.
 ```{r}
+tidy_model <- tidy(model_exploration_sleep_qual, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    is_occupation = grepl("^Occupation", term)
+  )
 
-ggplot(filtered_occ_data, aes(x = Predicted, y = Quality.of.Sleep)) +
-  geom_violin(fill = "lightgreen", alpha = 0.5) +
-  geom_jitter(width = 0.2, height = 0, alpha = 0.4, color = "blue") +
-  labs(
-    title = "Distribution of Sleep Quality by Predicted Occupation",
-    x = "Predicted Occupation",
-    y = "Reported Sleep Quality"
-  ) +
+#Get reordered term levels
+term_levels <- tidy_model %>% arrange(estimate) %>% pull(term)
+
+#Create a color for Occ
+label_colors <- ifelse(grepl("^Occupation ", term_levels), "red", "black")
+names(label_colors) <- term_levels
+
+fig1 <- ggplot(tidy_model, aes(x = reorder(term, estimate), y = estimate)) +
+  geom_point(aes(color = is_occupation)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, color = is_occupation), width = 0.2) +
+  scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"), guide = "none") +
+  coord_flip() +
+  labs(title = "Fig1: Effect of Predictors on Sleep Quality",
+       x = "Predictor",
+       y = "Coefficient Estimate") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
+  theme(axis.text.y = element_text(color = label_colors))
 
+#ggplot(filtered_occ_data, aes(x = Predicted, y = Quality.of.Sleep)) +
+  #geom_violin(fill = "lightgreen", alpha = 0.5) +
+  #geom_jitter(width = 0.2, height = 0, alpha = 0.4, color = "blue") +
+  #labs(
+    #title = "Distribution of Sleep Quality by Predicted Occupation",
+    #x = "Predicted Occupation",
+    #y = "Reported Sleep Quality"
+  #) +
+ # theme_minimal() +
+  #theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-```{r}
-new_data <- expand.grid(
-  Sleep.Duration = mean(filtered_occ_data$Sleep.Duration),
-  Quality.of.Sleep = seq(1, 10, length.out = 100),
-  Stress.Level = mean(filtered_occ_data$Stress.Level)
-)
+#new_data <- expand.grid(
+  #Sleep.Duration = mean(filtered_occ_data$Sleep.Duration),
+  #Quality.of.Sleep = seq(1, 10, length.out = 100),
+  #Stress.Level = mean(filtered_occ_data$Stress.Level)
+#)
 
-probs <- predict(model_filtered, newdata = new_data, type = "probs")
+#probs <- predict(model_filtered, newdata = new_data, type = "probs")
 
-prob_df <- cbind(new_data, probs)
+#prob_df <- cbind(new_data, probs)
 
-long_probs <- pivot_longer(prob_df, 
-                           cols = starts_with("Doctor"):last_col(), 
-                           names_to = "Occupation", 
-                           values_to = "Probability")
+#long_probs <- pivot_longer(prob_df, 
+                           #cols = starts_with("Doctor"):last_col(), 
+                           #names_to = "Occupation", 
+                           #values_to = "Probability")
 
-# Plot
-ggplot(long_probs, aes(x = Quality.of.Sleep, y = Probability, color = Occupation)) +
-  geom_line(size = 1.2) +
+#ggplot(long_probs, aes(x = Quality.of.Sleep, y = Probability, color = Occupation)) +
+  #geom_line(size = 1.2) +
+  #labs(
+    #title = "Predicted Probability of Occupation by Sleep Quality",
+    #x = "Sleep Quality (1 = Poor, 10 = Excellent)",
+    #y = "Predicted Probability"
+  #) +
+  #theme_minimal()
+
+fig2 <- ggplot(exploration_set, aes(x = Sleep.Duration, y = Quality.of.Sleep, color = Occupation)) +
+  geom_jitter(width = 0.1, height = 0.1, alpha = 0.6) +
+  geom_smooth(method = "loess", se = FALSE) +
   labs(
-    title = "Predicted Probability of Occupation by Sleep Quality",
-    x = "Sleep Quality (1 = Poor, 10 = Excellent)",
-    y = "Predicted Probability"
+    title = "Fig2: Sleep Quality/Occupation",
+    x = "Sleep Duration (hours)",
+    y = "Quality of Sleep"
   ) +
   theme_minimal()
 
+fig1 / fig2 + 
+  plot_layout(heights = c(1, 1))  # equal height
+
 ```
+Here is a visual(Figure 1) of our X-variables effects (coefficient) on our outcome variable. We see that sleep duration and stress level are most significant, but when directly evaluating for occupation (in red), Salesperson has a very significant negative correlation, and Lawyer as a very significant positive correlation.
 
-
-
+We can see in figure 2, that there is in fact, a positive trend with sleep duration and sleep quality as expected, with some occupations clearly falling behind. We use jittered points here to give a stronger representation of our data visually, and give a properly continuous look.
 ## Results
   In this confirmation set, we will first test how well our exploration set can be used to predict our confirmation set.
   
