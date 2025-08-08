@@ -128,6 +128,9 @@ model_exploration_sleep_qual_alone <- lm(Quality.of.Sleep ~ Occupation, data = e
 model_exploration_sleep_qual <- lm(Quality.of.Sleep ~ Sleep.Duration + Occupation + Stress.Level + Physical.Activity.Level, 
                               data = exploration_set)
 
+model_exploration_sleep_duration_stress <- lm(Quality.of.Sleep ~ Sleep.Duration + Stress.Level, 
+                              data = exploration_set)
+
 #model_exploration_sleep_qual_alone <- multinom(Quality.of.Sleep ~ Occupation, 
                               #data = exploration_set)
 #Occupation is not numeric
@@ -339,6 +342,8 @@ https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset
 For a first model we chose Occupation and Sleep quality due to the fact that these are the two variables we are most interested in seeing the relationship between, and the core of the study.
 
 For a second model we used sleep duration, sleep quality, occupation, and stress level because we believed that stress level and sleep duration could potentially be more effective in predicting sleep quality than occupation, making it a reliable way to test our hypothesis.
+
+A third model was also created, showing high sleep quality predictive value on sleep duration and stress level, but due to the focus of our report being occupation, it was not included
 
 
 ```{r}
