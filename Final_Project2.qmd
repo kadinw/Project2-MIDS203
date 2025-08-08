@@ -304,7 +304,6 @@ In sum, while stress and sleep duration strongly influence sleep quality and lik
 ## Appendix
 https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset
 
-Github: https://github.com/kadinw/Project2-MIDS203/tree/dev
 
 For a first model we chose Occupation and Sleep quality due to the fact that these are the two variables we are most interested in seeing the relationship between, and the core of the study.
 
@@ -330,6 +329,8 @@ fig3
 \newpage
 
 # References
+
+Github: https://github.com/kadinw/Project2-MIDS203/tree/dev
 
 Luckhaupt, S. E. (2010, February 1). OUP. Oxford Academic. https://academic.oup.com/sleep/article-abstract/33/1/29/2454494 
 
