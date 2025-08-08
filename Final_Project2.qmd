@@ -117,11 +117,11 @@ contrasts(exploration_set$Occupation) <- contrasts_matrix
 
 contrasts(confirmation_set$Occupation) <- contr.sum(n = length(levels(confirmation_set$Occupation)))
 
-#Fit model: Predicting Occupation
+#Fit models
 model_exploration <- multinom(Occupation ~ Sleep.Duration + Quality.of.Sleep + Stress.Level + Physical.Activity.Level, 
                               data = exploration_set)
 
-# Fit model: Predicting Quality.of.Sleep ~ Occupation
+
 model_exploration_sleep_qual_alone <- lm(Quality.of.Sleep ~ Occupation, data = exploration_set)
 
 
@@ -187,40 +187,6 @@ fig1 <- ggplot(tidy_model, aes(x = reorder(term, estimate), y = estimate)) +
   theme_minimal() +
   theme(axis.text.y = element_text(color = label_colors))
 
-#ggplot(filtered_occ_data, aes(x = Predicted, y = Quality.of.Sleep)) +
-  #geom_violin(fill = "lightgreen", alpha = 0.5) +
-  #geom_jitter(width = 0.2, height = 0, alpha = 0.4, color = "blue") +
-  #labs(
-    #title = "Distribution of Sleep Quality by Predicted Occupation",
-    #x = "Predicted Occupation",
-    #y = "Reported Sleep Quality"
-  #) +
- # theme_minimal() +
-  #theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-#new_data <- expand.grid(
-  #Sleep.Duration = mean(filtered_occ_data$Sleep.Duration),
-  #Quality.of.Sleep = seq(1, 10, length.out = 100),
-  #Stress.Level = mean(filtered_occ_data$Stress.Level)
-#)
-
-#probs <- predict(model_filtered, newdata = new_data, type = "probs")
-
-#prob_df <- cbind(new_data, probs)
-
-#long_probs <- pivot_longer(prob_df, 
-                           #cols = starts_with("Doctor"):last_col(), 
-                           #names_to = "Occupation", 
-                           #values_to = "Probability")
-
-#ggplot(long_probs, aes(x = Quality.of.Sleep, y = Probability, color = Occupation)) +
-  #geom_line(size = 1.2) +
-  #labs(
-    #title = "Predicted Probability of Occupation by Sleep Quality",
-    #x = "Sleep Quality (1 = Poor, 10 = Excellent)",
-    #y = "Predicted Probability"
-  #) +
-  #theme_minimal()
 
 fig2 <- ggplot(exploration_set, aes(x = Sleep.Duration, y = Quality.of.Sleep, color = Occupation)) +
   geom_jitter(width = 0.1, height = 0.1, alpha = 0.6) +
@@ -244,11 +210,11 @@ We can see in Figure 2 (or Fig2), that there is in fact, a positive trend with s
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 confirmation_set$Predicted <- predict(model_exploration, newdata = confirmation_set)
 
-# Evaluate accuracy or confusion matrix
+#Evaluate accuracy or confusion matrix
 conf_matrix1 <- table(Predicted = confirmation_set$Predicted, Actual = confirmation_set$Occupation)
 
 
-# 1. Create exploration set: 30% from each Quality.of.Sleep group
+#Create exploration set of 30% from each Quality.of.Sleep group
 exploration_set2 <- filtered_occ_data %>%
   group_by(Quality.of.Sleep) %>%
   slice_sample(prop = 0.3) %>%
@@ -305,7 +271,6 @@ invisible(capture.output({
   )
 
 #cor_matrix <- cor(numeric_data)
-#corrplot(cor_matrix, method = "circle", type = "upper", tl.cex = 0.8)
 
 
   dat <- subset(filtered_occ_data, complete.cases(Quality.of.Sleep, Occupation))
@@ -351,7 +316,7 @@ exploration_set$fitted <- predict(model_exploration_sleep_qual)
 exploration_set$residuals <- residuals(model_exploration_sleep_qual)
 
 fig3 <- ggplot(exploration_set, aes(x = fitted, y = residuals)) +
-  geom_point(alpha = 0.6, color = "darkgreen") +
+  geom_point(alpha = 0.6, color = "green") +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(title = "Residuals vs Fitted",
        x = "Fitted Values",
